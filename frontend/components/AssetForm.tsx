@@ -6,7 +6,7 @@ import { createAsset, deleteAsset } from "@/lib/api";
 import { label, money } from "@/lib/format";
 import type { AllocationBucket, Asset, AssetType } from "@/types/wealth";
 
-const assetTypes: AssetType[] = ["STOCK", "MUTUAL_FUND", "CRYPTO", "REAL_ESTATE", "FIXED_DEPOSIT", "CASH", "OTHER"];
+const assetTypes: AssetType[] = ["STOCK", "MF", "CRYPTO", "REAL_ESTATE", "FD", "CASH"];
 const buckets: AllocationBucket[] = ["LARGE_CAP", "MID_CAP", "SMALL_CAP", "FOREIGN", "CRYPTO", "REAL_ESTATE", "DEBT_CASH", "OTHER"];
 
 type Props = {
@@ -41,7 +41,7 @@ export function AssetForm({ assets, onChanged }: Props) {
     onChanged();
   }
 
-  async function remove(id?: number) {
+  async function remove(id?: string) {
     if (!id) return;
     await deleteAsset(id);
     onChanged();

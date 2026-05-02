@@ -1,12 +1,11 @@
 # Family Wealth Tracker
 
-A full-stack web application to track family net worth, visualize true asset allocation, and keep investments updated with stale-aware price syncing.
+A full-stack web application to track family assets, visualize true allocation, and keep investments updated with stale-aware price syncing.
 
 ## Features
 
-- Net worth dashboard with assets, liabilities, and holdings.
+- Portfolio dashboard with assets and holdings.
 - Asset tracking for stocks, mutual funds, crypto, real estate, FDs, cash, and other assets.
-- Liability tracking for loans and other outstanding obligations.
 - Look-through allocation buckets: large cap, mid cap, small cap, foreign, crypto, real estate, debt/cash, and other.
 - Price cache with manual refresh and scheduled stale refresh.
 - Interactive allocation charts with Recharts.
@@ -43,6 +42,28 @@ By default the backend uses an in-memory H2 database with sample data. For Postg
 export DATABASE_URL=jdbc:postgresql://host:5432/database
 export DATABASE_USERNAME=your_user
 export DATABASE_PASSWORD=your_password
+```
+
+To use Supabase without committing credentials, create `backend/.env` from the tracked example:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Then put your real Supabase values in `backend/.env`. This file is ignored by Git. The backend imports it automatically when you run from `backend/`:
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+Supabase usually provides a pooled PostgreSQL URL. Use JDBC format and keep the password in `DATABASE_PASSWORD`, for example:
+
+```text
+DATABASE_URL=jdbc:postgresql://aws-0-region.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
+DATABASE_USERNAME=postgres.your-project-ref
+DATABASE_PASSWORD=your_real_password
+HIBERNATE_DDL_AUTO=validate
 ```
 
 ### Frontend
@@ -93,10 +114,6 @@ curl -X POST "http://localhost:8080/api/prices/refresh?force=true"
 - `POST /api/assets`
 - `PUT /api/assets/{id}`
 - `DELETE /api/assets/{id}`
-- `GET /api/liabilities`
-- `POST /api/liabilities`
-- `PUT /api/liabilities/{id}`
-- `DELETE /api/liabilities/{id}`
 - `POST /api/prices/refresh?force=true`
 
 ## Roadmap

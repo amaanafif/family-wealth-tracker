@@ -4,54 +4,44 @@ import com.familywealth.tracker.asset.AllocationBucket;
 import com.familywealth.tracker.asset.Asset;
 import com.familywealth.tracker.asset.AssetRepository;
 import com.familywealth.tracker.asset.AssetType;
-import com.familywealth.tracker.liability.LiabilityRepository;
-import com.familywealth.tracker.price.PriceService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DashboardService {
     private final AssetRepository assets;
-    private final LiabilityRepository liabilities;
-    private final PriceService prices;
 
-    public DashboardService(AssetRepository assets, LiabilityRepository liabilities, PriceService prices) {
+    public DashboardService(AssetRepository assets) {
         this.assets = assets;
-        this.liabilities = liabilities;
-        this.prices = prices;
     }
 
     public DashboardSummary summary() {
-        List<AssetValue> assetValues = assets.findAll().stream()
+        List<Asset> assetList = assets.findAll();
+        List<AssetValue> assetValues = assetList.stream()
             .map(asset -> new AssetValue(
                 asset.getId(),
                 asset.getName(),
                 asset.getType(),
                 asset.getBucket(),
-                asset.getQuantity(),
-                prices.priceFor(asset),
-                asset.getQuantity().multiply(prices.priceFor(asset))
+                BigDecimal.ONE,
+                asset.getValue(),
+                asset.getValue()
             ))
             .toList();
 
         BigDecimal totalAssets = assetValues.stream()
             .map(AssetValue::value)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalLiabilities = liabilities.findAll().stream()
-            .map(liability -> liability.getOutstandingAmount() == null ? BigDecimal.ZERO : liability.getOutstandingAmount())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new DashboardSummary(
             totalAssets,
-            totalLiabilities,
-            totalAssets.subtract(totalLiabilities),
+            totalAssets,
             allocationByType(assetValues, totalAssets),
-            allocationByBucket(assetValues, totalAssets),
+            allocationByBucket(assetList, totalAssets),
             assetValues.stream().sorted(Comparator.comparing(AssetValue::value).reversed()).toList()
         );
     }
@@ -66,12 +56,22 @@ public class DashboardService {
             .toList();
     }
 
-    private List<AllocationSlice> allocationByBucket(List<AssetValue> values, BigDecimal totalAssets) {
-        return values.stream()
-            .collect(Collectors.groupingBy(value -> label(value.bucket()), Collectors.reducing(BigDecimal.ZERO, AssetValue::value, BigDecimal::add)))
+    private List<AllocationSlice> allocationByBucket(List<Asset> assetList, BigDecimal totalAssets) {
+        return assetList.stream()
+            .flatMap(asset -> List.of(
+                slice("Large Cap", asset.bucketValue(AllocationBucket.LARGE_CAP), totalAssets),
+                slice("Mid Cap", asset.bucketValue(AllocationBucket.MID_CAP), totalAssets),
+                slice("Small Cap", asset.bucketValue(AllocationBucket.SMALL_CAP), totalAssets),
+                slice("Foreign", asset.bucketValue(AllocationBucket.FOREIGN), totalAssets),
+                slice("Crypto", asset.bucketValue(AllocationBucket.CRYPTO), totalAssets),
+                slice("Real Estate", asset.bucketValue(AllocationBucket.REAL_ESTATE), totalAssets),
+                slice("Debt / Cash", asset.bucketValue(AllocationBucket.DEBT_CASH), totalAssets)
+            ).stream())
+            .collect(Collectors.groupingBy(AllocationSlice::label, Collectors.reducing(BigDecimal.ZERO, AllocationSlice::value, BigDecimal::add)))
             .entrySet()
             .stream()
             .map(entry -> slice(entry.getKey(), entry.getValue(), totalAssets))
+            .filter(slice -> slice.value().signum() > 0)
             .sorted(Comparator.comparing(AllocationSlice::value).reversed())
             .toList();
     }
@@ -86,11 +86,10 @@ public class DashboardService {
     private String label(AssetType type) {
         return switch (type) {
             case STOCK -> "Equity";
-            case MUTUAL_FUND -> "Mutual Funds";
+            case MF -> "Mutual Funds";
             case CRYPTO -> "Crypto";
             case REAL_ESTATE -> "Real Estate";
-            case FIXED_DEPOSIT, CASH -> "Debt / Cash";
-            case OTHER -> "Other";
+            case FD, CASH -> "Debt / Cash";
         };
     }
 
