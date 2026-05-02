@@ -1,142 +1,51 @@
-# 💰 Net Worth Tracker
+# Family Wealth Tracker
 
-A full-stack web application to track **family net worth**, visualize **true asset allocation**, and keep investments updated with **smart price syncing**.
+A full-stack web application to track family net worth, visualize true asset allocation, and keep investments updated with stale-aware price syncing.
 
----
+## Features
 
-## 🚀 Features
+- Net worth dashboard with assets, liabilities, and holdings.
+- Asset tracking for stocks, mutual funds, crypto, real estate, FDs, cash, and other assets.
+- Liability tracking for loans and other outstanding obligations.
+- Look-through allocation buckets: large cap, mid cap, small cap, foreign, crypto, real estate, debt/cash, and other.
+- Price cache with manual refresh and scheduled stale refresh.
+- Interactive allocation charts with Recharts.
 
-### 📊 Net Worth Dashboard
+## Tech Stack
 
-* Total net worth (assets - liabilities)
-* Real-time breakdown across:
+- Frontend: Next.js, React, Recharts, Axios, lucide-react.
+- Backend: Spring Boot, JPA/Hibernate, REST APIs.
+- Database: PostgreSQL for deployment, H2 for local backend-only development.
+- Infra: Docker Compose for local full-stack runs.
 
-  * Equity
-  * Foreign Equity
-  * Crypto
-  * Real Estate
-  * Debt / Cash
-
----
-
-### 🧠 Look-through Asset Allocation
-
-* Converts all investments into:
-
-  * Large Cap
-  * Mid Cap
-  * Small Cap
-  * Foreign
-* Mutual funds are **broken down internally** (no flexi/multi cap clutter)
-
----
-
-### 💹 Price Updates (Smart + Free)
-
-* Stocks → Yahoo Finance
-* Crypto → CoinGecko
-* Mutual Funds → AMFI NAV
-
-✔ Cached in database
-✔ Auto-refresh (daily)
-✔ Manual refresh option
-✔ No unnecessary API calls
-
----
-
-### 🧾 Asset & Liability Tracking
-
-* Add/edit:
-
-  * Stocks, MFs, Crypto
-  * Real estate, FDs, cash
-  * Loans & liabilities
-
----
-
-### 📈 Interactive Charts
-
-* Portfolio allocation pie chart
-* Drill-down into equity (large/mid/small)
-
----
-
-## 🏗️ Tech Stack
-
-### Frontend
-
-* Next.js (React)
-* Recharts
-* Axios
-
-### Backend
-
-* Spring Boot (Java)
-* JPA / Hibernate
-* REST APIs
-
-### Database
-
-* PostgreSQL (Supabase)
-
-### Infra
-
-* Docker (optional)
-* Vercel (frontend)
-* Render / Railway (backend)
-
----
-
-## 🧩 Architecture
+## Project Structure
 
 ```text
-Frontend (Next.js)
-        ↓
-Spring Boot API
-        ↓
-PostgreSQL (Supabase)
-        ↓
-External APIs (Yahoo / CoinGecko / AMFI)
-```
-
----
-
-## 📂 Project Structure
-
-```bash
-networth-app/
+family-wealth-tracker/
 ├── backend/
 ├── frontend/
 ├── docker-compose.yml
 └── README.md
 ```
 
----
+## Local Development
 
-## ⚙️ Setup Instructions
-
-### 1. Clone repo
-
-```bash
-git clone https://github.com/your-username/networth-app.git
-cd networth-app
-```
-
----
-
-### 2. Backend setup
+### Backend
 
 ```bash
 cd backend
-mvn clean install
 mvn spring-boot:run
 ```
 
-Configure DB in `application.yml`
+By default the backend uses an in-memory H2 database with sample data. For PostgreSQL or Supabase, set:
 
----
+```bash
+export DATABASE_URL=jdbc:postgresql://host:5432/database
+export DATABASE_USERNAME=your_user
+export DATABASE_PASSWORD=your_password
+```
 
-### 3. Frontend setup
+### Frontend
 
 ```bash
 cd frontend
@@ -144,70 +53,56 @@ npm install
 npm run dev
 ```
 
----
-
-### 4. Run with Docker (optional)
+The frontend expects the API at `http://localhost:8080/api`. Override it with:
 
 ```bash
-docker-compose up
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
 ```
 
----
+### Docker
 
-## 🔄 Price Update Strategy
+```bash
+docker-compose up --build
+```
 
-* Prices are **cached in DB**
-* Updated:
+Then open:
 
-  * Automatically (daily scheduler)
-  * On manual refresh
-* Only refreshed if **data is stale**
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8080/api/dashboard`
 
-| Asset Type | Update Frequency |
-| ---------- | ---------------- |
-| Stocks     | ~1 hour          |
-| Crypto     | ~15 minutes      |
-| MF NAV     | Daily            |
+## Price Syncing
 
----
+Market-priced assets use the cached price when available and fall back to the manually entered price otherwise.
 
-## ⚠️ Limitations
+| Asset Type | Source | Stale After |
+| --- | --- | --- |
+| Stocks | Yahoo Finance chart endpoint | 1 hour |
+| Crypto | CoinGecko simple price | 15 minutes |
+| Mutual funds | AMFI NAV via mfapi.in | 1 day |
 
-* Uses free APIs (may have rate limits)
-* Not real-time tick data
-* Designed for personal use / MVP
+Manual refresh:
 
----
+```bash
+curl -X POST "http://localhost:8080/api/prices/refresh?force=true"
+```
 
-## 🛣️ Roadmap
+## API Overview
 
-* [ ] CAS PDF import (auto-detect MF + stocks)
-* [ ] AI-based asset entry
-* [ ] Goal tracking
-* [ ] Multi-user family accounts
-* [ ] Mobile app
+- `GET /api/dashboard`
+- `GET /api/assets`
+- `POST /api/assets`
+- `PUT /api/assets/{id}`
+- `DELETE /api/assets/{id}`
+- `GET /api/liabilities`
+- `POST /api/liabilities`
+- `PUT /api/liabilities/{id}`
+- `DELETE /api/liabilities/{id}`
+- `POST /api/prices/refresh?force=true`
 
----
+## Roadmap
 
-## 🤝 Contributing
-
-Pull requests are welcome.
-For major changes, please open an issue first.
-
----
-
-## 📜 License
-
-MIT License
-
----
-
-## 💡 Inspiration
-
-Built to create a **single source of truth for personal and family wealth**, without relying on multiple apps.
-
----
-
-## ⭐ If you like this project
-
-Give it a star ⭐ — helps visibility!
+- CAS PDF import.
+- AI-assisted asset entry.
+- Goal tracking.
+- Multi-user family accounts.
+- Mobile app.

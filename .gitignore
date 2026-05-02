@@ -1,0 +1,13 @@
+.DS_Store
+
+# Java
+backend/target/
+
+# Node
+frontend/.next/
+frontend/node_modules/
+frontend/npm-debug.log*
+
+# Env
+.env
+*.env.local
