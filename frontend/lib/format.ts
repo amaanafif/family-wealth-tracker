@@ -11,6 +11,12 @@ export function percent(value: number) {
 }
 
 export function label(value: string) {
+  if (value === "MF") {
+    return "Mutual Fund";
+  }
+  if (value === "FD") {
+    return "Fixed Deposit";
+  }
   return value
     .toLowerCase()
     .split("_")

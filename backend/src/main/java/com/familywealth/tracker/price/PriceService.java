@@ -36,20 +36,28 @@ public class PriceService {
 
     public BigDecimal priceFor(Asset asset) {
         if (!isMarketPriced(asset.getType())) {
-            return asset.getManualPrice();
+            return asset.getValue();
         }
 
-        return priceCaches.findById(cacheKey(asset))
+        if (asset.getSymbol() == null || asset.getSymbol().isBlank()) {
+            return asset.getValue();
+        }
+
+        return priceCaches.findBySymbolAndType(asset.getSymbol(), priceType(asset.getType()))
             .map(PriceCache::getPrice)
-            .orElse(asset.getManualPrice());
+            .orElse(asset.getValue());
     }
 
     public Map<String, Integer> refreshStalePrices(boolean force) {
-        List<Asset> marketAssets = assets.findByTypeIn(List.of(AssetType.STOCK, AssetType.CRYPTO, AssetType.MUTUAL_FUND));
+        List<Asset> marketAssets = assets.findByTypeIn(List.of(AssetType.STOCK, AssetType.CRYPTO, AssetType.MF));
         int refreshed = 0;
         int skipped = 0;
 
         for (Asset asset : marketAssets) {
+            if (asset.getSymbol() == null || asset.getSymbol().isBlank()) {
+                skipped++;
+                continue;
+            }
             if (!force && !isStale(asset)) {
                 skipped++;
                 continue;
@@ -61,7 +69,7 @@ public class PriceService {
             }
             Optional<BigDecimal> price = client.get().fetchPrice(asset);
             if (price.isPresent()) {
-                priceCaches.save(new PriceCache(cacheKey(asset), asset.getType(), price.get(), Instant.now(), client.get().source()));
+                priceCaches.save(new PriceCache(asset.getSymbol(), priceType(asset.getType()), price.get(), Instant.now()));
                 refreshed++;
             } else {
                 skipped++;
@@ -77,7 +85,7 @@ public class PriceService {
     }
 
     private boolean isStale(Asset asset) {
-        return priceCaches.findById(cacheKey(asset))
+        return priceCaches.findBySymbolAndType(asset.getSymbol(), priceType(asset.getType()))
             .map(cache -> cache.getFetchedAt().plus(frequency(asset.getType())).isBefore(Instant.now()))
             .orElse(true);
     }
@@ -86,25 +94,30 @@ public class PriceService {
         return switch (type) {
             case CRYPTO -> Duration.ofMinutes(15);
             case STOCK -> Duration.ofHours(1);
-            case MUTUAL_FUND -> Duration.ofDays(1);
+            case MF -> Duration.ofDays(1);
             default -> Duration.ofDays(365);
         };
     }
 
     private boolean isMarketPriced(AssetType type) {
-        return type == AssetType.STOCK || type == AssetType.CRYPTO || type == AssetType.MUTUAL_FUND;
+        return type == AssetType.STOCK || type == AssetType.CRYPTO || type == AssetType.MF;
     }
 
     private Optional<PriceClient> clientFor(AssetType type) {
         return switch (type) {
             case STOCK -> Optional.of(stockClient);
             case CRYPTO -> Optional.of(cryptoClient);
-            case MUTUAL_FUND -> Optional.of(mutualFundClient);
+            case MF -> Optional.of(mutualFundClient);
             default -> Optional.empty();
         };
     }
 
-    private String cacheKey(Asset asset) {
-        return asset.getType() + ":" + asset.getSymbol();
+    private PriceType priceType(AssetType type) {
+        return switch (type) {
+            case STOCK -> PriceType.STOCK;
+            case CRYPTO -> PriceType.CRYPTO;
+            case MF -> PriceType.MF;
+            default -> throw new IllegalArgumentException("Unsupported price type: " + type);
+        };
     }
 }

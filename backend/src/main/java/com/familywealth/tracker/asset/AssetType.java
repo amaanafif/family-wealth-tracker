@@ -2,10 +2,9 @@ package com.familywealth.tracker.asset;
 
 public enum AssetType {
     STOCK,
-    MUTUAL_FUND,
+    MF,
     CRYPTO,
     REAL_ESTATE,
-    FIXED_DEPOSIT,
-    CASH,
-    OTHER
+    FD,
+    CASH
 }

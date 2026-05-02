@@ -2,6 +2,7 @@ package com.familywealth.tracker.asset;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,15 +34,16 @@ public class AssetController {
     }
 
     @PutMapping("/{id}")
-    ResponseEntity<Asset> update(@PathVariable Long id, @Valid @RequestBody Asset incoming) {
+    ResponseEntity<Asset> update(@PathVariable UUID id, @Valid @RequestBody Asset incoming) {
         return assets.findById(id)
             .map(asset -> {
                 asset.setName(incoming.getName());
                 asset.setSymbol(incoming.getSymbol());
                 asset.setType(incoming.getType());
                 asset.setBucket(incoming.getBucket());
-                asset.setQuantity(incoming.getQuantity());
-                asset.setManualPrice(incoming.getManualPrice());
+                asset.setValue(incoming.getValue());
+                asset.setOwnerId(incoming.getOwnerId());
+                asset.setFamilyId(incoming.getFamilyId());
                 asset.touch();
                 return ResponseEntity.ok(assets.save(asset));
             })
@@ -49,7 +51,7 @@ public class AssetController {
     }
 
     @DeleteMapping("/{id}")
-    ResponseEntity<Void> delete(@PathVariable Long id) {
+    ResponseEntity<Void> delete(@PathVariable UUID id) {
         if (!assets.existsById(id)) {
             return ResponseEntity.notFound().build();
         }

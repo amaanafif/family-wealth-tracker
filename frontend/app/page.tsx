@@ -1,27 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Banknote, Landmark, LayoutDashboard, Plus, ReceiptText, RefreshCcw, Scale, TrendingUp, WalletCards } from "lucide-react";
+import { Banknote, Landmark, LayoutDashboard, Plus, RefreshCcw, Scale, TrendingUp, WalletCards } from "lucide-react";
 import { AllocationCharts } from "@/components/AllocationCharts";
 import { AssetForm } from "@/components/AssetForm";
 import { HoldingsTable } from "@/components/HoldingsTable";
-import { LiabilityForm } from "@/components/LiabilityForm";
-import { getAssets, getDashboard, getLiabilities, refreshPrices } from "@/lib/api";
+import { getAssets, getDashboard, refreshPrices } from "@/lib/api";
 import { money } from "@/lib/format";
-import type { Asset, DashboardSummary, Liability } from "@/types/wealth";
+import type { Asset, DashboardSummary } from "@/types/wealth";
 
 export default function Home() {
   const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [liabilities, setLiabilities] = useState<Liability[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [summary, assetList, liabilityList] = await Promise.all([getDashboard(), getAssets(), getLiabilities()]);
+    const [summary, assetList] = await Promise.all([getDashboard(), getAssets()]);
     setDashboard(summary);
     setAssets(assetList);
-    setLiabilities(liabilityList);
     setLoading(false);
   }, []);
 
@@ -63,10 +60,6 @@ export default function Home() {
             <WalletCards size={15} />
             Assets
           </button>
-          <button className="nav-tab" type="button">
-            <ReceiptText size={15} />
-            Liabilities
-          </button>
         </nav>
       </header>
 
@@ -74,7 +67,7 @@ export default function Home() {
         <div>
           <span className="eyebrow">Family overview</span>
           <h1>{money(dashboard.netWorth)}</h1>
-          <p>Total net worth with look-through allocation.</p>
+          <p>Total portfolio value with look-through allocation.</p>
         </div>
         <div className="hero-actions">
           <button className="secondary" disabled={refreshing} type="button" onClick={syncPrices}>
@@ -88,7 +81,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="summary-grid">
+      <section className="summary-grid two-up">
         <div className="metric">
           <div className="metric-heading">
             <span>Total assets</span>
@@ -98,20 +91,12 @@ export default function Home() {
           <small>{dashboard.holdings.length} holdings</small>
         </div>
         <div className="metric">
-          <div className="metric-heading danger-accent">
-            <span>Total liabilities</span>
-            <ReceiptText size={17} />
-          </div>
-          <strong>{money(dashboard.totalLiabilities)}</strong>
-          <small>{liabilities.length} items</small>
-        </div>
-        <div className="metric">
           <div className="metric-heading growth-accent">
-            <span>Net worth</span>
+            <span>Portfolio value</span>
             <TrendingUp size={17} />
           </div>
           <strong>{money(dashboard.netWorth)}</strong>
-          <small>Assets minus liabilities</small>
+          <small>Current tracked asset value</small>
         </div>
       </section>
 
@@ -159,7 +144,6 @@ export default function Home() {
         </div>
         <aside>
           <AssetForm assets={assets} onChanged={load} />
-          <LiabilityForm liabilities={liabilities} onChanged={load} />
         </aside>
       </section>
     </main>

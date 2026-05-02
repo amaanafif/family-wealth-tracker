@@ -1,59 +1,70 @@
 package com.familywealth.tracker.price;
 
-import com.familywealth.tracker.asset.AssetType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
+@Table(name = "prices")
 public class PriceCache {
     @Id
-    private String cacheKey;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @NotNull
+    private String symbol;
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    private AssetType type;
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(columnDefinition = "price_type")
+    private PriceType type;
 
     @NotNull
     @DecimalMin("0.0")
-    private BigDecimal price;
+    private BigDecimal value;
 
-    private Instant fetchedAt;
-    private String source;
+    private Instant lastUpdated;
 
     protected PriceCache() {
     }
 
-    public PriceCache(String cacheKey, AssetType type, BigDecimal price, Instant fetchedAt, String source) {
-        this.cacheKey = cacheKey;
+    public PriceCache(String symbol, PriceType type, BigDecimal value, Instant lastUpdated) {
+        this.symbol = symbol;
         this.type = type;
-        this.price = price;
-        this.fetchedAt = fetchedAt;
-        this.source = source;
+        this.value = value;
+        this.lastUpdated = lastUpdated;
     }
 
-    public String getCacheKey() {
-        return cacheKey;
+    public UUID getId() {
+        return id;
     }
 
-    public AssetType getType() {
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public PriceType getType() {
         return type;
     }
 
     public BigDecimal getPrice() {
-        return price;
+        return value;
     }
 
     public Instant getFetchedAt() {
-        return fetchedAt;
-    }
-
-    public String getSource() {
-        return source;
+        return lastUpdated;
     }
 }

@@ -1,11 +1,10 @@
 export type AssetType =
   | "STOCK"
-  | "MUTUAL_FUND"
+  | "MF"
   | "CRYPTO"
   | "REAL_ESTATE"
-  | "FIXED_DEPOSIT"
-  | "CASH"
-  | "OTHER";
+  | "FD"
+  | "CASH";
 
 export type AllocationBucket =
   | "LARGE_CAP"
@@ -18,20 +17,13 @@ export type AllocationBucket =
   | "OTHER";
 
 export type Asset = {
-  id?: number;
+  id?: string;
   name: string;
   symbol?: string | null;
   type: AssetType;
   bucket: AllocationBucket;
   quantity: number;
   manualPrice: number;
-};
-
-export type Liability = {
-  id?: number;
-  name: string;
-  outstandingAmount: number;
-  interestRate?: number | null;
 };
 
 export type AllocationSlice = {
@@ -41,7 +33,7 @@ export type AllocationSlice = {
 };
 
 export type Holding = {
-  id: number;
+  id: string;
   name: string;
   type: AssetType;
   bucket: AllocationBucket;
@@ -52,7 +44,6 @@ export type Holding = {
 
 export type DashboardSummary = {
   totalAssets: number;
-  totalLiabilities: number;
   netWorth: number;
   allocationByType: AllocationSlice[];
   lookThroughAllocation: AllocationSlice[];

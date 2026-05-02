@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Family Wealth Tracker",
-  description: "Track net worth, asset allocation, liabilities, and smart price syncs.",
+  description: "Track family assets, allocation, and smart price syncs.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
