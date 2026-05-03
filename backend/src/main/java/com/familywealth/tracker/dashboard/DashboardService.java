@@ -1,9 +1,7 @@
 package com.familywealth.tracker.dashboard;
 
-import com.familywealth.tracker.asset.AllocationBucket;
-import com.familywealth.tracker.asset.Asset;
-import com.familywealth.tracker.asset.AssetRepository;
-import com.familywealth.tracker.asset.AssetType;
+import com.familywealth.tracker.portfolio.Holdings;
+import com.familywealth.tracker.portfolio.HoldingsRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
@@ -13,65 +11,56 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class DashboardService {
-    private final AssetRepository assets;
+    private final HoldingsRepository holdings;
 
-    public DashboardService(AssetRepository assets) {
-        this.assets = assets;
+    public DashboardService(HoldingsRepository holdings) {
+        this.holdings = holdings;
     }
 
     public DashboardSummary summary() {
-        List<Asset> assetList = assets.findAll();
-        List<AssetValue> assetValues = assetList.stream()
-            .map(asset -> new AssetValue(
-                asset.getId(),
-                asset.getName(),
-                asset.getType(),
-                asset.getBucket(),
-                BigDecimal.ONE,
-                asset.getValue(),
-                asset.getValue()
+        List<Holdings> holdingsList = holdings.findAll();
+        List<HoldingsValue> holdingsValues = holdingsList.stream()
+            .map(holding -> new HoldingsValue(
+                holding.getId(),
+                holding.getName(),
+                holding.getType(),
+                holding.getQuantity(),
+                holding.getLastPrice(),
+                holding.getCurrentValue(),
+                holding.getInvestedValue(),
+                holding.getPnl()
             ))
             .toList();
 
-        BigDecimal totalAssets = assetValues.stream()
-            .map(AssetValue::value)
+        BigDecimal totalAssets = holdingsValues.stream()
+            .map(HoldingsValue::value)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalInvested = holdingsValues.stream()
+            .map(HoldingsValue::investedValue)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalProfitLoss = holdingsValues.stream()
+            .map(HoldingsValue::profitLoss)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new DashboardSummary(
             totalAssets,
             totalAssets,
-            allocationByType(assetValues, totalAssets),
-            allocationByBucket(assetList, totalAssets),
-            assetValues.stream().sorted(Comparator.comparing(AssetValue::value).reversed()).toList()
+            totalInvested,
+            totalProfitLoss,
+            allocationByType(holdingsValues, totalAssets),
+            List.of(), // remove lookThroughAllocation
+            holdingsValues.stream().sorted(Comparator.comparing(HoldingsValue::value).reversed()).toList()
         );
     }
 
-    private List<AllocationSlice> allocationByType(List<AssetValue> values, BigDecimal totalAssets) {
+    private List<AllocationSlice> allocationByType(List<HoldingsValue> values, BigDecimal totalAssets) {
         return values.stream()
-            .collect(Collectors.groupingBy(value -> label(value.type()), Collectors.reducing(BigDecimal.ZERO, AssetValue::value, BigDecimal::add)))
+            .collect(Collectors.groupingBy(value -> label(value.type()), Collectors.reducing(BigDecimal.ZERO, HoldingsValue::value, BigDecimal::add)))
             .entrySet()
             .stream()
             .map(entry -> slice(entry.getKey(), entry.getValue(), totalAssets))
-            .sorted(Comparator.comparing(AllocationSlice::value).reversed())
-            .toList();
-    }
-
-    private List<AllocationSlice> allocationByBucket(List<Asset> assetList, BigDecimal totalAssets) {
-        return assetList.stream()
-            .flatMap(asset -> List.of(
-                slice("Large Cap", asset.bucketValue(AllocationBucket.LARGE_CAP), totalAssets),
-                slice("Mid Cap", asset.bucketValue(AllocationBucket.MID_CAP), totalAssets),
-                slice("Small Cap", asset.bucketValue(AllocationBucket.SMALL_CAP), totalAssets),
-                slice("Foreign", asset.bucketValue(AllocationBucket.FOREIGN), totalAssets),
-                slice("Crypto", asset.bucketValue(AllocationBucket.CRYPTO), totalAssets),
-                slice("Real Estate", asset.bucketValue(AllocationBucket.REAL_ESTATE), totalAssets),
-                slice("Debt / Cash", asset.bucketValue(AllocationBucket.DEBT_CASH), totalAssets)
-            ).stream())
-            .collect(Collectors.groupingBy(AllocationSlice::label, Collectors.reducing(BigDecimal.ZERO, AllocationSlice::value, BigDecimal::add)))
-            .entrySet()
-            .stream()
-            .map(entry -> slice(entry.getKey(), entry.getValue(), totalAssets))
-            .filter(slice -> slice.value().signum() > 0)
             .sorted(Comparator.comparing(AllocationSlice::value).reversed())
             .toList();
     }
@@ -83,26 +72,11 @@ public class DashboardService {
         return new AllocationSlice(label, value, percentage);
     }
 
-    private String label(AssetType type) {
+    private String label(String type) {
         return switch (type) {
-            case STOCK -> "Equity";
-            case MF -> "Mutual Funds";
-            case CRYPTO -> "Crypto";
-            case REAL_ESTATE -> "Real Estate";
-            case FD, CASH -> "Debt / Cash";
-        };
-    }
-
-    private String label(AllocationBucket bucket) {
-        return switch (bucket) {
-            case LARGE_CAP -> "Large Cap";
-            case MID_CAP -> "Mid Cap";
-            case SMALL_CAP -> "Small Cap";
-            case FOREIGN -> "Foreign";
-            case CRYPTO -> "Crypto";
-            case REAL_ESTATE -> "Real Estate";
-            case DEBT_CASH -> "Debt / Cash";
-            case OTHER -> "Other";
+            case "STOCK" -> "Equity";
+            case "MF" -> "Mutual Funds";
+            default -> type;
         };
     }
 }

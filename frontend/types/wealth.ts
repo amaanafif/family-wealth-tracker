@@ -40,11 +40,15 @@ export type Holding = {
   quantity: number;
   price: number;
   value: number;
+  investedValue: number;
+  profitLoss: number;
 };
 
 export type DashboardSummary = {
   totalAssets: number;
   netWorth: number;
+  totalInvested: number;
+  totalProfitLoss: number;
   allocationByType: AllocationSlice[];
   lookThroughAllocation: AllocationSlice[];
   holdings: Holding[];

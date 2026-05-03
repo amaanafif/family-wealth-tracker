@@ -1,6 +1,6 @@
 package com.familywealth.tracker.price;
 
-import com.familywealth.tracker.asset.Asset;
+import com.familywealth.tracker.portfolio.Holdings;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -11,14 +11,14 @@ public class MutualFundPriceClient implements PriceClient {
     private final RestClient restClient = RestClient.create("https://api.mfapi.in");
 
     @Override
-    public Optional<BigDecimal> fetchPrice(Asset asset) {
-        if (asset.getSymbol() == null || asset.getSymbol().isBlank()) {
+    public Optional<BigDecimal> fetchPrice(Holdings holding) {
+        if (holding.getSymbol() == null || holding.getSymbol().isBlank()) {
             return Optional.empty();
         }
 
         try {
             MfApiResponse response = restClient.get()
-                .uri("/mf/{schemeCode}/latest", asset.getSymbol())
+                .uri("/mf/{schemeCode}/latest", holding.getSymbol())
                 .retrieve()
                 .body(MfApiResponse.class);
             if (response != null && response.data() != null && response.data().nav() != null) {

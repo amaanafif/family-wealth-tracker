@@ -1,8 +1,7 @@
 package com.familywealth.tracker.price;
 
-import com.familywealth.tracker.asset.Asset;
-import com.familywealth.tracker.asset.AssetRepository;
-import com.familywealth.tracker.asset.AssetType;
+import com.familywealth.tracker.portfolio.Holdings;
+import com.familywealth.tracker.portfolio.HoldingsRepository;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
@@ -14,62 +13,61 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PriceService {
-    private final AssetRepository assets;
+    private final HoldingsRepository holdings;
     private final PriceCacheRepository priceCaches;
     private final StockPriceClient stockClient;
-    private final CryptoPriceClient cryptoClient;
     private final MutualFundPriceClient mutualFundClient;
 
     public PriceService(
-        AssetRepository assets,
+        HoldingsRepository holdings,
         PriceCacheRepository priceCaches,
         StockPriceClient stockClient,
-        CryptoPriceClient cryptoClient,
         MutualFundPriceClient mutualFundClient
     ) {
-        this.assets = assets;
+        this.holdings = holdings;
         this.priceCaches = priceCaches;
         this.stockClient = stockClient;
-        this.cryptoClient = cryptoClient;
         this.mutualFundClient = mutualFundClient;
     }
 
-    public BigDecimal priceFor(Asset asset) {
-        if (!isMarketPriced(asset.getType())) {
-            return asset.getValue();
+    public BigDecimal priceFor(Holdings holding) {
+        if (!isMarketPriced(holding.getType())) {
+            return holding.getCurrentValue(); // or something
         }
 
-        if (asset.getSymbol() == null || asset.getSymbol().isBlank()) {
-            return asset.getValue();
+        if (holding.getSymbol() == null || holding.getSymbol().isBlank()) {
+            return holding.getCurrentValue();
         }
 
-        return priceCaches.findBySymbolAndType(asset.getSymbol(), priceType(asset.getType()))
+        return priceCaches.findBySymbolAndType(holding.getSymbol(), priceType(holding.getType()))
             .map(PriceCache::getPrice)
-            .orElse(asset.getValue());
+            .orElse(holding.getCurrentValue());
     }
 
     public Map<String, Integer> refreshStalePrices(boolean force) {
-        List<Asset> marketAssets = assets.findByTypeIn(List.of(AssetType.STOCK, AssetType.CRYPTO, AssetType.MF));
+        List<Holdings> marketHoldings = holdings.findAll().stream()
+            .filter(h -> List.of("STOCK", "MF").contains(h.getType()))
+            .toList();
         int refreshed = 0;
         int skipped = 0;
 
-        for (Asset asset : marketAssets) {
-            if (asset.getSymbol() == null || asset.getSymbol().isBlank()) {
+        for (Holdings holding : marketHoldings) {
+            if (holding.getSymbol() == null || holding.getSymbol().isBlank()) {
                 skipped++;
                 continue;
             }
-            if (!force && !isStale(asset)) {
+            if (!force && !isStale(holding)) {
                 skipped++;
                 continue;
             }
-            Optional<PriceClient> client = clientFor(asset.getType());
+            Optional<PriceClient> client = clientFor(holding.getType());
             if (client.isEmpty()) {
                 skipped++;
                 continue;
             }
-            Optional<BigDecimal> price = client.get().fetchPrice(asset);
+            Optional<BigDecimal> price = client.get().fetchPrice(holding);
             if (price.isPresent()) {
-                priceCaches.save(new PriceCache(asset.getSymbol(), priceType(asset.getType()), price.get(), Instant.now()));
+                priceCaches.save(new PriceCache(holding.getSymbol(), priceType(holding.getType()), price.get(), Instant.now()));
                 refreshed++;
             } else {
                 skipped++;
@@ -84,39 +82,36 @@ public class PriceService {
         refreshStalePrices(false);
     }
 
-    private boolean isStale(Asset asset) {
-        return priceCaches.findBySymbolAndType(asset.getSymbol(), priceType(asset.getType()))
-            .map(cache -> cache.getFetchedAt().plus(frequency(asset.getType())).isBefore(Instant.now()))
+    private boolean isStale(Holdings holding) {
+        return priceCaches.findBySymbolAndType(holding.getSymbol(), priceType(holding.getType()))
+            .map(cache -> cache.getFetchedAt().plus(frequency(holding.getType())).isBefore(Instant.now()))
             .orElse(true);
     }
 
-    private Duration frequency(AssetType type) {
+    private Duration frequency(String type) {
         return switch (type) {
-            case CRYPTO -> Duration.ofMinutes(15);
-            case STOCK -> Duration.ofHours(1);
-            case MF -> Duration.ofDays(1);
+            case "STOCK" -> Duration.ofHours(1);
+            case "MF" -> Duration.ofDays(1);
             default -> Duration.ofDays(365);
         };
     }
 
-    private boolean isMarketPriced(AssetType type) {
-        return type == AssetType.STOCK || type == AssetType.CRYPTO || type == AssetType.MF;
+    private boolean isMarketPriced(String type) {
+        return "STOCK".equals(type) || "MF".equals(type);
     }
 
-    private Optional<PriceClient> clientFor(AssetType type) {
+    private Optional<PriceClient> clientFor(String type) {
         return switch (type) {
-            case STOCK -> Optional.of(stockClient);
-            case CRYPTO -> Optional.of(cryptoClient);
-            case MF -> Optional.of(mutualFundClient);
+            case "STOCK" -> Optional.of(stockClient);
+            case "MF" -> Optional.of(mutualFundClient);
             default -> Optional.empty();
         };
     }
 
-    private PriceType priceType(AssetType type) {
+    private PriceType priceType(String type) {
         return switch (type) {
-            case STOCK -> PriceType.STOCK;
-            case CRYPTO -> PriceType.CRYPTO;
-            case MF -> PriceType.MF;
+            case "STOCK" -> PriceType.STOCK;
+            case "MF" -> PriceType.MF;
             default -> throw new IllegalArgumentException("Unsupported price type: " + type);
         };
     }

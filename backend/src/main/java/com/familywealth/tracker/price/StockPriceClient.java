@@ -1,6 +1,6 @@
 package com.familywealth.tracker.price;
 
-import com.familywealth.tracker.asset.Asset;
+import com.familywealth.tracker.portfolio.Holdings;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -12,14 +12,14 @@ public class StockPriceClient implements PriceClient {
     private final RestClient restClient = RestClient.create();
 
     @Override
-    public Optional<BigDecimal> fetchPrice(Asset asset) {
-        if (asset.getSymbol() == null || asset.getSymbol().isBlank()) {
+    public Optional<BigDecimal> fetchPrice(Holdings holding) {
+        if (holding.getSymbol() == null || holding.getSymbol().isBlank()) {
             return Optional.empty();
         }
 
         try {
             Map<?, ?> response = restClient.get()
-                .uri("https://query1.finance.yahoo.com/v8/finance/chart/{symbol}", asset.getSymbol())
+                .uri("https://query1.finance.yahoo.com/v8/finance/chart/{symbol}", holding.getSymbol())
                 .retrieve()
                 .body(Map.class);
             Map<?, ?> chart = (Map<?, ?>) response.get("chart");
