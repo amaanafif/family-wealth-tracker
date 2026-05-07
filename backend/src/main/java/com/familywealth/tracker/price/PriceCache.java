@@ -34,17 +34,19 @@ public class PriceCache {
 
     @NotNull
     @DecimalMin("0.0")
-    private BigDecimal value;
+    @Column(name = "price")
+    private BigDecimal price;
 
+    @Column(name = "last_updated")
     private Instant lastUpdated;
 
     protected PriceCache() {
     }
 
-    public PriceCache(String symbol, PriceType type, BigDecimal value, Instant lastUpdated) {
+    public PriceCache(String symbol, PriceType type, BigDecimal price, Instant lastUpdated) {
         this.symbol = symbol;
         this.type = type;
-        this.value = value;
+        this.price = price;
         this.lastUpdated = lastUpdated;
     }
 
@@ -61,7 +63,7 @@ public class PriceCache {
     }
 
     public BigDecimal getPrice() {
-        return value;
+        return price;
     }
 
     public Instant getFetchedAt() {

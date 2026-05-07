@@ -157,20 +157,11 @@ textarea {
   color: white;
 }
 
-.hero-row {
-  align-items: flex-end;
-  display: flex;
-  gap: 18px;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.hero-row h1 {
-  font-size: clamp(36px, 5vw, 48px);
+.hero-main.primary h1 {
+  font-size: clamp(40px, 5vw, 56px);
   font-weight: 500;
-  letter-spacing: 0;
   line-height: 1;
-  margin: 14px 0 6px;
+  margin: 10px 0 6px;
 }
 
 .hero-row p,
@@ -497,37 +488,53 @@ textarea {
 
 /* ===== HERO METRICS ===== */
 
-.hero-metrics {
+/* ===== HERO ROW ===== */
+
+.hero-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 32px;
+  grid-template-columns: 1fr auto; /* metrics + buttons */
   align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
-/* BIG MAIN */
+/* ===== METRICS ===== */
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr; /* main + 2 small */
+  align-items: center;
+  gap: 32px;
+}
+
+/* MAIN BLOCK */
 .hero-main.primary {
   text-align: left;
 }
 
 .hero-main.primary h1 {
-  font-size: clamp(40px, 5vw, 56px);
+  font-size: 48px;
   margin: 10px 0 6px;
 }
 
-/* SMALL METRICS */
+/* SMALL BLOCKS */
 .hero-main.secondary {
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* IMPORTANT: vertical divider */
+.hero-main.secondary:not(:first-child) {
   border-left: 1px solid var(--line);
   padding-left: 20px;
 }
 
+/* TEXT SIZES */
 .hero-main.secondary h2 {
-  font-size: 20px;
+  font-size: 18px;
   margin: 6px 0;
-  font-weight: 500;
 }
 
 .hero-main.secondary p {
@@ -540,6 +547,14 @@ textarea {
   font-size: 11px;
   letter-spacing: 0.2em;
   margin-bottom: 4px;
+}
+
+/* ===== ACTIONS ===== */
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -600,7 +615,7 @@ textarea {
   }
 
   .hero-metrics {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     gap: 20px;
   }
 

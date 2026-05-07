@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Banknote,
   Landmark,
@@ -13,11 +13,13 @@ import {
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { AssetForm } from "@/components/AssetForm";
 import { HoldingsTable } from "@/components/HoldingsTable";
-import { getAssets, getDashboard, refreshPrices } from "@/lib/api";
+import { getAssets, getDashboard, refreshPrices, importAssets } from "@/lib/api";
 import { money, percent } from "@/lib/format";
 import type { Asset, DashboardSummary } from "@/types/wealth";
 
 export default function Home() {
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,35 @@ export default function Home() {
     setAssets(assetList);
     setLoading(false);
   }, []);
+
+  const handleImportFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      console.log("No file selected");
+      return;
+    }
+    console.log("Starting import for file:", file.name);
+    setImporting(true);
+    try {
+      await importAssets(file);
+      console.log("Import successful");
+      alert("Imported successfully");
+      await load();
+    } catch (e) {
+      console.error("Import error:", e);
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      alert(`Import failed: ${errorMessage}`);
+    } finally {
+      setImporting(false);
+      event.target.value = "";
+    }
+  }, [load]);
+
+  // Trigger file input
+  function triggerFileInput() {
+    console.log("Triggering file input");
+    fileInputRef.current?.click();
+  }
 
   useEffect(() => {
     load().catch(() => setLoading(false));
@@ -135,10 +166,17 @@ export default function Home() {
               <RefreshCcw size={17} />
               Refresh prices
             </button>
-            <button>
+            <button type="button" onClick={triggerFileInput} disabled={importing}>
               <Plus size={17} />
-              Upload sta ̑tement
+              {importing ? "Importing..." : "Upload statement"}
             </button>
+            <input
+              type="file"
+              accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              style={{ display: "none" }}
+              ref={fileInputRef}
+              onChange={handleImportFile}
+            />
           </div>
         </section>
 

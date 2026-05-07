@@ -28,3 +28,19 @@ export async function refreshPrices(force = false) {
   const { data } = await api.post<{ refreshed: number; skipped: number }>(`/prices/refresh?force=${force}`);
   return data;
 }
+
+// Import assets from CSV/Excel file
+export async function importAssets(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    console.log("Uploading file:", file.name, "Size:", file.size);
+    const { data } = await api.post("/assets/import", formData);
+    console.log("Upload response:", data);
+    return data;
+  } catch (error) {
+    console.error("Upload failed:", error);
+    throw error;
+  }
+}
+

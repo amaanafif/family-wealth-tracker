@@ -4,21 +4,26 @@ server:
 spring:
   config:
     import: optional:file:.env[.properties]
+
   datasource:
-    url: ${DATABASE_URL:jdbc:h2:mem:wealth;MODE=PostgreSQL;DATABASE_TO_UPPER=false}
-    username: ${DATABASE_USERNAME:sa}
-    password: ${DATABASE_PASSWORD:}
+    url: jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0
+    username: postgres.naorrdsifwzlvvezfmmg
+    password: vlz1A5KqbZDMN6sB
+    driver-class-name: org.postgresql.Driver
+
   jpa:
     defer-datasource-initialization: true
-    hibernate:
-      ddl-auto: ${HIBERNATE_DDL_AUTO:update}
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
-  h2:
-    console:
-      enabled: true
+
+logging:
+  level:
+    org.springframework.jdbc: DEBUG
+    org.hibernate.SQL: DEBUG
 
 app:
   cors:
